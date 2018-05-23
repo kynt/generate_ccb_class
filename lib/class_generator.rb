@@ -1,15 +1,16 @@
 # coding: utf-8
 require 'json'
 require_relative './ccb_parser'
+require_relative './Const'
 
 # クラス自動生成実行用クラス
 class ClassGenerator
   attr_reader :file_name
 
-  def initialize(file_name)
-    @file_name = File.basename(file_name, ".ccb")
+  def initialize(file_path)
+    @file_name = File.basename(file_path, ".ccb")
     @ccb_parser = CcbParser.new
-    @ccb_parser.Load file_name
+    @ccb_parser.Load file_path
     @class_name = @ccb_parser.class_name
   end
 
@@ -77,18 +78,14 @@ class ClassGenerator
     return variable_str
   end
 
-  def get_button_listner_code is_header
+  def get_button_listner_code
     control_selector_list = @ccb_parser.control_selector_list
 
     listener_str = ""
     for selector_name_org in control_selector_list
       selector_name = selector_name_org.delete ":"
       tmp_str = "virtual void " + selector_name + "(cocos2d::CCObject *object, cocos2d::extension::CCControlEvent event)";
-      if is_header
-        tmp_str = tmp_str + ";"
-      else
-        tmp_str = tmp_str + "{\n\n}\n"
-      end
+      tmp_str = tmp_str + ";"
 
       if listener_str.length == 0
         listener_str = "        " + tmp_str
@@ -107,7 +104,7 @@ class ClassGenerator
     for selector_name_org in control_selector_list
       selector_name = selector_name_org.delete ":"
       tmp_str = "void #{@class_name}::" + selector_name + "(cocos2d::CCObject *object, cocos2d::extension::CCControlEvent event)";
-      tmp_str = tmp_str + "{\n\n}\n"
+      tmp_str = tmp_str + " {\n\n}\n"
 
       if listener_str.length == 0
         listener_str = "" + tmp_str
@@ -121,9 +118,18 @@ class ClassGenerator
 
   def get_load_ccb_code
     load_code = "    CCNodeLoaderLibrary* node_loader = pCCBReader->getNodeLoaderLibrary();"
-    for load_ccb_class in @ccb_parser.load_ccb_list
+    load_ccb_list = @ccb_parser.load_ccb_list
+    load_ccb_list = load_ccb_list.uniq
+    for load_ccb_class in load_ccb_list
+      namespace = ""
+      loader_class_name = load_ccb_class + "BuilderLoader"
+      if Constant::CustomClassAssignerMap.has_key? load_ccb_class
+        namespace = Constant::CustomClassAssignerMap[load_ccb_class]['namespace']
+        loader_class_name = Constant::CustomClassAssignerMap[load_ccb_class]['loader']
+      end
+
       load_code = load_code + "\n"
-      load_code = load_code + "    node_loader->registerCCNodeLoader(\"#{load_ccb_class}\", #{load_ccb_class}BuilderLoader::loader());"
+      load_code = load_code + "    node_loader->registerCCNodeLoader(\"#{load_ccb_class}\", #{namespace}#{loader_class_name}::loader());"
     end
 
     return load_code
@@ -172,6 +178,25 @@ class ClassGenerator
     return glue_code
   end
 
+  def get_include_code
+    include_code = ""
+    load_ccb_list = @ccb_parser.load_ccb_list
+    load_ccb_list = load_ccb_list.uniq
+
+    for load_ccb_class in load_ccb_list
+      if !Constant::CustomClassAssignerMap.has_key? load_ccb_class
+        next
+      end
+
+      if include_code.length != 0
+        include_code = include_code + "\n"
+      end
+      include_code = include_code + Constant::CustomClassAssignerMap[load_ccb_class]['include']
+    end
+
+    return include_code
+  end
+
   # 詳細の文字列を取得する
   # json :: descriptionを含むjsonのハッシュ
   def get_description(json)
@@ -180,7 +205,7 @@ class ClassGenerator
   end
 
   def get_header_class_code()
-    listener_str = get_button_listner_code true
+    listener_str = get_button_listner_code
     variable_str = get_assign_variable
     return """#pragma once
     #include <cocos-ext.h>
@@ -231,10 +256,10 @@ class ClassGenerator
     assign_code = get_member_assign_code
     glue_code = get_ccconrol_glue_code
     button_listner_code = get_button_listner_implement_code
+    include_code = get_include_code
     return """#include \"#{@file_name}.h\"
 #include \"application/joker_application.h\"
-#include \"ccb/parts/button/CCBPartsButtonSoundTap.h\"
-#include \"NEED_FOR_REFACTOR/Util.h\"
+#{include_code}
 
 JOKER_BEGIN_NAMESPACE
 
@@ -284,4 +309,5 @@ if __FILE__ == $PROGRAM_NAME
   generator = ClassGenerator.new "test.ccb"
   # p generator.get_header_class_code
   generator.get_implement_class_code
+  pp Constant::CustomClassAssignerMap['CCBScenePartsFooter']
 end

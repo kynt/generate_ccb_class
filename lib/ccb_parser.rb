@@ -49,8 +49,8 @@ class CcbParser
     end
   end
 
-  def Load file_name
-    doc = REXML::Document.new(File.new(file_name))
+  def Load file_path
+    doc = REXML::Document.new(File.new(file_path))
     hash = Hash.from_xml(doc.to_s)
     SearchObject hash
   end
@@ -79,6 +79,11 @@ class CcbParser
       # カスタムクラスのくせにcustom_classに名前が入らないので苦肉の策で名前を代用する
       @load_ccb_list << name
     else
+      custom_class = target[Index::CustomClass]
+      if custom_class != nil
+        puts custom_class
+        @load_ccb_list << custom_class
+      end
     end
   end
 
