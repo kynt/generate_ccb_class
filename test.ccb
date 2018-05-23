@@ -403,7 +403,7 @@
 				<key>customClass</key>
 				<string></string>
 				<key>displayName</key>
-				<string>CCBPartsDeckAbilitySortTab</string>
+				<string>ccb_parts_deck_ability_sort_tab</string>
 				<key>memberVarAssignmentName</key>
 				<string>ablity_sort_tab</string>
 				<key>memberVarAssignmentType</key>

@@ -20,14 +20,17 @@ end
 
 # main関数
 def main
-  file_name = "api_guildbattle_instant_card_entry"
+  file_name = "test.ccb"
   class_name = file_name.to_camel
-  generator = ClassGenerator.new(class_name, file_name)
+  generator = ClassGenerator.new(file_name)
   code = generator.get_header_class_code
-  write_code('/Users/a13916/applibot/joker-client/chaos-ios/chaos/Classes/network/guild_battle/instant_card/' + file_name + '.h', code);
-
+  write_code('./' + generator.file_name + '.h', code);
+  
   code = generator.get_implement_class_code
-  write_code('/Users/a13916/applibot/joker-client/chaos-ios/chaos/Classes/network/guild_battle/instant_card/' + file_name + '.cpp', code);
+  write_code('./' + generator.file_name + '.cc', code);
+
+  # code = generator.get_implement_class_code
+  # write_code('/Users/a13916/applibot/joker-client/chaos-ios/chaos/Classes/network/guild_battle/instant_card/' + file_name + '.cpp', code);
 end
 
 def write_code(file_path, code)
